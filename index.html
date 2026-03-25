@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<title>Panel počasí (Open-Meteo)</title>
+<title>Panel počasí (Open-Meteo, vylepšený)</title>
 <style>
   body {
     margin: 0;
@@ -11,31 +11,28 @@
   }
   .weather-panel {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    overflow-x: auto;
     padding: 10px;
   }
   .hour-row {
+    flex: 0 0 100px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: calc(100% / 6 - 8px);
     margin: 4px;
     font-size: 14px;
     line-height: 1.2em;
     padding: 8px;
-    background-color: #fff;
     border-radius: 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    color: #fff;
+    min-width: 80px;
   }
   .hour-row .time { font-weight: bold; margin-bottom: 2px; }
   .hour-row .icon { font-size: 28px; margin: 3px 0; }
   .hour-row .temp { margin-top: 2px; font-size: 14px; }
-  .hour-row .precip { margin-top: 2px; font-size: 12px; color: #555; }
-  @media (max-width: 600px) {
-    .hour-row { width: calc(100% / 3 - 8px); } /* menší obrazovky */
-  }
+  .hour-row .precip { margin-top: 2px; font-size: 12px; color: #eee; }
 </style>
 </head>
 <body>
@@ -45,15 +42,32 @@
   const lat = 50.0755; // Praha
   const lon = 14.4378;
 
+  // Mapování emoji podle procent srážek a teploty
+  function getWeatherIcon(pop, temp) {
+    if (pop >= 50) return "🌧️";
+    if (pop >= 20) return "⛅";
+    if (temp <= 0) return "❄️";
+    return "☀️";
+  }
+
+  // Barva pozadí podle teploty
+  function getTempColor(temp){
+    if(temp <= 0) return "#00bfff"; // modrá
+    if(temp <= 10) return "#66ccff"; 
+    if(temp <= 20) return "#ffd966"; 
+    if(temp <= 30) return "#ff9933"; 
+    return "#ff3300"; // červená
+  }
+
   async function loadWeather() {
     try {
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability&timezone=Europe%2FPrague`;
       const res = await fetch(url);
       const data = await res.json();
 
-      const times = data.hourly.time.slice(0,6);
-      const temps = data.hourly.temperature_2m.slice(0,6);
-      const pops = data.hourly.precipitation_probability.slice(0,6);
+      const times = data.hourly.time.slice(0,12); // zobraz 12 hodin
+      const temps = data.hourly.temperature_2m.slice(0,12);
+      const pops = data.hourly.precipitation_probability.slice(0,12);
 
       const container = document.getElementById("weather");
       container.innerHTML = "";
@@ -63,15 +77,11 @@
         const hourStr = `${d.getHours()}:00`;
         const temp = Math.round(temps[i]);
         const pop = Math.round(pops[i]);
-
-        // jednoduché mapování na emoji
-        let icon = "❓";
-        if(pop >= 50) icon = "🌧️";
-        else if(pop >= 20) icon = "⛅";
-        else icon = "☀️";
+        const icon = getWeatherIcon(pop, temp);
+        const bgColor = getTempColor(temp);
 
         container.innerHTML += `
-          <div class="hour-row">
+          <div class="hour-row" style="background-color:${bgColor}">
             <div class="time">${hourStr}</div>
             <div class="icon">${icon}</div>
             <div class="temp">${temp}°C</div>
