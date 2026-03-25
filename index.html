@@ -2,9 +2,11 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<title>Panel počasí (vylepšený kontrast)</title>
+<title>Počasí Uhrineves</title>
 <style>
   body { margin:0; font-family:Arial,sans-serif; background:#f0f0f0; }
+  .location { text-align:center; font-size:24px; font-weight:bold; margin:10px 0; }
+  .date { text-align:center; font-size:18px; margin-bottom:10px; color:#333; }
   .weather-panel { display:flex; overflow-x:auto; padding:10px; }
   .hour-row {
     flex:0 0 120px; display:flex; flex-direction:column;
@@ -19,10 +21,12 @@
 </style>
 </head>
 <body>
+<div class="location">Uhrineves</div>
+<div class="date" id="date"></div>
 <div class="weather-panel" id="weather">Načítám počasí...</div>
 <script>
-const lat = 50.0755;
-const lon = 14.4378;
+const lat = 50.1045;
+const lon = 14.3112;
 
 function getWeatherIcon(pop, temp){
   if(pop >=50) return "🌧️";
@@ -39,7 +43,6 @@ function getTempColor(temp){
   return "#ff3300";
 }
 
-// kontrast textu podle pozadí
 function getTextColor(bgColor){
   if(bgColor === "#ffd966") return "#333"; // tmavý text na žluté
   return "#fff";
@@ -47,7 +50,7 @@ function getTextColor(bgColor){
 
 async function loadWeather(){
   try{
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability&timezone=Europe%2FPrague`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,precipitation_probability&timezone=Europe%2FPrague`;
     const res = await fetch(url);
     const data = await res.json();
 
@@ -55,17 +58,25 @@ async function loadWeather(){
     const times = data.hourly.time;
     const temps = data.hourly.temperature_2m;
     const pops = data.hourly.precipitation_probability;
+    const precs = data.hourly.precipitation;
 
     const currentIndex = times.findIndex(t => new Date(t) >= now);
+
+    // zobraz datum
+    const dateDiv = document.getElementById("date");
+    const today = new Date(times[currentIndex]);
+    const options = { weekday: 'long', year:'numeric', month:'long', day:'numeric' };
+    dateDiv.textContent = today.toLocaleDateString('cs-CZ', options);
 
     const container = document.getElementById("weather");
     container.innerHTML = "";
 
-    for(let i=currentIndex; i<currentIndex+6; i++){ // jen 6 hodin
+    for(let i=currentIndex; i<currentIndex+6; i++){
       const d = new Date(times[i]);
       const hourStr = `${d.getHours()}:00`;
       const temp = Math.round(temps[i]);
       const pop = Math.round(pops[i]);
+      const prec = precs[i].toFixed(1); // mm
       const bgColor = getTempColor(temp);
       const icon = getWeatherIcon(pop,temp);
       const textColor = getTextColor(bgColor);
@@ -75,7 +86,7 @@ async function loadWeather(){
           <div class="time">${hourStr}</div>
           <div class="icon">${icon}</div>
           <div class="temp">${temp}°C</div>
-          <div class="precip">${pop}%</div>
+          <div class="precip">${prec} mm (${pop}%)</div>
         </div>
       `;
     }
