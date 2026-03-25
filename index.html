@@ -1,101 +1,90 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8">
-    <title>Panel počasí</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-        }
-
-        .weather-panel {
-            display: flex;
-            flex-wrap: wrap; /* umožní více hodin vedle sebe */
-            justify-content: center;
-            padding: 10px;
-        }
-
-        .hour-row {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: calc(100% / 6 - 8px); /* 6 hodin vedle sebe */
-            margin: 4px;
-            font-size: 14px;
-            line-height: 1.2em;
-            padding: 8px;
-            background-color: #fff;
-            border-radius: 5px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .hour-row .time {
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-
-        .hour-row .icon {
-            font-size: 28px;
-            margin: 3px 0;
-        }
-
-        .hour-row .temp {
-            margin-top: 2px;
-            font-size: 14px;
-        }
-
-        .hour-row .precip {
-            margin-top: 2px;
-            font-size: 12px;
-            color: #555;
-        }
-
-        @media (max-width: 600px) {
-            .hour-row { width: calc(100% / 3 - 8px); } /* menší obrazovky: 3 hodiny vedle sebe */
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Panel počasí</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+  }
+  .weather-panel {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px;
+  }
+  .hour-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: calc(100% / 6 - 8px);
+    margin: 4px;
+    font-size: 14px;
+    line-height: 1.2em;
+    padding: 8px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .hour-row .time { font-weight: bold; margin-bottom: 2px; }
+  .hour-row .icon { font-size: 28px; margin: 3px 0; }
+  .hour-row .temp { margin-top: 2px; font-size: 14px; }
+  .hour-row .precip { margin-top: 2px; font-size: 12px; color: #555; }
+  @media (max-width: 600px) {
+    .hour-row { width: calc(100% / 3 - 8px); } /* menší obrazovky */
+  }
+</style>
 </head>
 <body>
-    <div class="weather-panel">
-        <div class="hour-row">
-            <div class="time">08:00</div>
-            <div class="icon">☀️</div>
-            <div class="temp">12°C</div>
-            <div class="precip">10 %</div>
-        </div>
-        <div class="hour-row">
-            <div class="time">09:00</div>
-            <div class="icon">☀️</div>
-            <div class="temp">14°C</div>
-            <div class="precip">5 %</div>
-        </div>
-        <div class="hour-row">
-            <div class="time">10:00</div>
-            <div class="icon">⛅</div>
-            <div class="temp">15°C</div>
-            <div class="precip">20 %</div>
-        </div>
-        <div class="hour-row">
-            <div class="time">11:00</div>
-            <div class="icon">⛅</div>
-            <div class="temp">16°C</div>
-            <div class="precip">15 %</div>
-        </div>
-        <div class="hour-row">
-            <div class="time">12:00</div>
-            <div class="icon">🌧️</div>
-            <div class="temp">17°C</div>
-            <div class="precip">40 %</div>
-        </div>
-        <div class="hour-row">
-            <div class="time">13:00</div>
-            <div class="icon">🌧️</div>
-            <div class="temp">18°C</div>
-            <div class="precip">50 %</div>
-        </div>
-    </div>
+<div class="weather-panel" id="weather"></div>
+
+<script>
+  const API_KEY = "f0e3e748ab3783cf8976eadd9f9a2d67";  // ← vlož sem svůj API klíč
+  const lat = 50.0755; // Praha
+  const lon = 14.4378;
+
+  async function loadWeather() {
+    try {
+      const res = await fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=metric&exclude=minutely,daily,alerts&appid=${API_KEY}`);
+      const data = await res.json();
+      const container = document.getElementById("weather");
+      container.innerHTML = "";
+
+      data.hourly.slice(0,6).forEach(hourData => {
+        const d = new Date(hourData.dt * 1000);
+        const time = `${d.getHours()}:00`;
+        const temp = Math.round(hourData.temp);
+        const pop = Math.round((hourData.pop || 0) * 100);
+
+        // jednoduché mapování ikon z OpenWeather na emoji
+        const iconCode = hourData.weather[0].icon;
+        let icon = "❓";
+        if(iconCode.startsWith("01")) icon = "☀️";
+        else if(iconCode.startsWith("02")) icon = "⛅";
+        else if(iconCode.startsWith("03") || iconCode.startsWith("04")) icon = "☁️";
+        else if(iconCode.startsWith("09") || iconCode.startsWith("10")) icon = "🌧️";
+        else if(iconCode.startsWith("11")) icon = "⛈️";
+        else if(iconCode.startsWith("13")) icon = "❄️";
+        else if(iconCode.startsWith("50")) icon = "🌫️";
+
+        container.innerHTML += `
+          <div class="hour-row">
+            <div class="time">${time}</div>
+            <div class="icon">${icon}</div>
+            <div class="temp">${temp}°C</div>
+            <div class="precip">${pop}%</div>
+          </div>
+        `;
+      });
+    } catch (e) {
+      console.error("Chyba při načítání počasí:", e);
+    }
+  }
+
+  loadWeather();
+</script>
 </body>
 </html>
