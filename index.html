@@ -2,100 +2,84 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<title>Panel počasí (Open-Meteo, vylepšený)</title>
+<title>Panel počasí (od aktuální hodiny)</title>
 <style>
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-  }
-  .weather-panel {
-    display: flex;
-    overflow-x: auto;
-    padding: 10px;
-  }
+  body { margin:0; font-family:Arial,sans-serif; background:#f0f0f0; }
+  .weather-panel { display:flex; overflow-x:auto; padding:10px; }
   .hour-row {
-    flex: 0 0 100px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 4px;
-    font-size: 14px;
-    line-height: 1.2em;
-    padding: 8px;
-    border-radius: 5px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    color: #fff;
-    min-width: 80px;
+    flex:0 0 100px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; margin:4px;
+    font-size:14px; line-height:1.2em; padding:8px; border-radius:5px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.1); color:#fff; min-width:80px;
   }
-  .hour-row .time { font-weight: bold; margin-bottom: 2px; }
-  .hour-row .icon { font-size: 28px; margin: 3px 0; }
-  .hour-row .temp { margin-top: 2px; font-size: 14px; }
-  .hour-row .precip { margin-top: 2px; font-size: 12px; color: #eee; }
+  .hour-row .time { font-weight:bold; margin-bottom:2px; }
+  .hour-row .icon { font-size:28px; margin:3px 0; }
+  .hour-row .temp { margin-top:2px; font-size:14px; }
+  .hour-row .precip { margin-top:2px; font-size:12px; color:#eee; }
 </style>
 </head>
 <body>
 <div class="weather-panel" id="weather">Načítám počasí...</div>
-
 <script>
-  const lat = 50.0755; // Praha
-  const lon = 14.4378;
+const lat = 50.0755;
+const lon = 14.4378;
 
-  // Mapování emoji podle procent srážek a teploty
-  function getWeatherIcon(pop, temp) {
-    if (pop >= 50) return "🌧️";
-    if (pop >= 20) return "⛅";
-    if (temp <= 0) return "❄️";
-    return "☀️";
-  }
+function getWeatherIcon(pop, temp){
+  if(pop >=50) return "🌧️";
+  if(pop >=20) return "⛅";
+  if(temp<=0) return "❄️";
+  return "☀️";
+}
 
-  // Barva pozadí podle teploty
-  function getTempColor(temp){
-    if(temp <= 0) return "#00bfff"; // modrá
-    if(temp <= 10) return "#66ccff"; 
-    if(temp <= 20) return "#ffd966"; 
-    if(temp <= 30) return "#ff9933"; 
-    return "#ff3300"; // červená
-  }
+function getTempColor(temp){
+  if(temp<=0) return "#00bfff";
+  if(temp<=10) return "#66ccff";
+  if(temp<=20) return "#ffd966";
+  if(temp<=30) return "#ff9933";
+  return "#ff3300";
+}
 
-  async function loadWeather() {
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability&timezone=Europe%2FPrague`;
-      const res = await fetch(url);
-      const data = await res.json();
+async function loadWeather(){
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability&timezone=Europe%2FPrague`;
+    const res = await fetch(url);
+    const data = await res.json();
 
-      const times = data.hourly.time.slice(0,12); // zobraz 12 hodin
-      const temps = data.hourly.temperature_2m.slice(0,12);
-      const pops = data.hourly.precipitation_probability.slice(0,12);
+    const now = new Date();
+    const times = data.hourly.time;
+    const temps = data.hourly.temperature_2m;
+    const pops = data.hourly.precipitation_probability;
 
-      const container = document.getElementById("weather");
-      container.innerHTML = "";
+    // najdi index aktuální hodiny
+    const currentIndex = times.findIndex(t => new Date(t) >= now);
 
-      for(let i=0; i<times.length; i++){
-        const d = new Date(times[i]);
-        const hourStr = `${d.getHours()}:00`;
-        const temp = Math.round(temps[i]);
-        const pop = Math.round(pops[i]);
-        const icon = getWeatherIcon(pop, temp);
-        const bgColor = getTempColor(temp);
+    const container = document.getElementById("weather");
+    container.innerHTML = "";
 
-        container.innerHTML += `
-          <div class="hour-row" style="background-color:${bgColor}">
-            <div class="time">${hourStr}</div>
-            <div class="icon">${icon}</div>
-            <div class="temp">${temp}°C</div>
-            <div class="precip">${pop}%</div>
-          </div>
-        `;
-      }
-    } catch(e) {
-      console.error("Chyba při načítání počasí:", e);
-      document.getElementById("weather").innerHTML = "Nepodařilo se načíst data.";
+    for(let i=currentIndex; i<currentIndex+12; i++){
+      const d = new Date(times[i]);
+      const hourStr = `${d.getHours()}:00`;
+      const temp = Math.round(temps[i]);
+      const pop = Math.round(pops[i]);
+      const icon = getWeatherIcon(pop,temp);
+      const bgColor = getTempColor(temp);
+
+      container.innerHTML += `
+        <div class="hour-row" style="background-color:${bgColor}">
+          <div class="time">${hourStr}</div>
+          <div class="icon">${icon}</div>
+          <div class="temp">${temp}°C</div>
+          <div class="precip">${pop}%</div>
+        </div>
+      `;
     }
+  } catch(e){
+    console.error("Chyba při načítání počasí:", e);
+    document.getElementById("weather").innerHTML="Nepodařilo se načíst data.";
   }
+}
 
-  loadWeather();
+loadWeather();
 </script>
 </body>
 </html>
