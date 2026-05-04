@@ -2,114 +2,219 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<title>Počasí Uhrineves</title>
+<title>Počasí Uhříněves</title>
+
 <style>
-  body { margin:0; font-family:Arial,sans-serif; background:#f0f0f0; text-align:center; }
-  .location { font-size:24px; font-weight:bold; margin:10px 0; }
-  .date { font-size:18px; margin-bottom:10px; color:#333; }
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f0f0f0;
+    text-align: center;
+  }
+
+  .location {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 10px 0;
+  }
+
+  .date {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+  }
+
   .weather-panel {
     display: flex;
-    justify-content: center; /* vycentrování hodin */
+    justify-content: center;
     overflow-x: auto;
-    padding:10px;
+    padding: 10px;
   }
+
   .hour-row {
     flex: 0 0 100px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    margin:6px;
-    font-size:16px;
-    line-height:1.4em;
-    padding:12px;
-    border-radius:6px;
-    box-shadow:0 1px 4px rgba(0,0,0,0.15);
-    min-width:100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 6px;
+    font-size: 16px;
+    line-height: 1.4em;
+    padding: 12px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    min-width: 100px;
   }
-  .hour-row .time { font-weight:bold; margin-bottom:4px; font-size:18px; }
-  .hour-row .icon { font-size:36px; margin:4px 0; }
-  .hour-row .temp { margin-top:4px; font-size:18px; }
-  .hour-row .precip { margin-top:2px; font-size:14px; }
+
+  .hour-row .time {
+    font-weight: bold;
+    margin-bottom: 4px;
+    font-size: 18px;
+  }
+
+  .hour-row .icon {
+    font-size: 36px;
+    margin: 4px 0;
+  }
+
+  .hour-row .temp {
+    margin-top: 4px;
+    font-size: 18px;
+  }
+
+  .hour-row .precip {
+    margin-top: 2px;
+    font-size: 14px;
+  }
 </style>
 </head>
+
 <body>
-<div class="location">Uhrineves</div>
+
+<div class="location">Uhříněves</div>
 <div class="date" id="date"></div>
 <div class="weather-panel" id="weather">Načítám počasí...</div>
+
 <script>
 const lat = 50.1045;
 const lon = 14.3112;
 
-function getWeatherIcon(pop, temp){
-  if(pop >=50) return "🌧️";
-  if(pop >=20) return "⛅";
-  if(temp<=0) return "❄️";
-  return "☀️";
+function getWeatherIcon(pop, temp, hour, sunriseHour, sunsetHour) {
+
+  const isNight = hour < sunriseHour || hour >= sunsetHour;
+
+  // déšť
+  if (pop >= 50) {
+    return "🌧️";
+  }
+
+  // částečná oblačnost
+  if (pop >= 20) {
+    return isNight ? "☁️🌙" : "⛅";
+  }
+
+  // mráz / sníh
+  if (temp <= 0) {
+    return "❄️";
+  }
+
+  // jasno
+  return isNight ? "🌙" : "☀️";
 }
 
-function getTempColor(temp){
-  if(temp<=0) return "#00bfff";
-  if(temp<=10) return "#66ccff"; 
-  if(temp<=20) return "#ffd966"; 
-  if(temp<=30) return "#ff9933"; 
+function getTempColor(temp) {
+  if (temp <= 0) return "#00bfff";
+  if (temp <= 10) return "#66ccff";
+  if (temp <= 20) return "#ffd966";
+  if (temp <= 30) return "#ff9933";
   return "#ff3300";
 }
 
-function getTextColor(bgColor){
-  if(bgColor === "#ffd966") return "#333"; 
+function getTextColor(bgColor) {
+  if (bgColor === "#ffd966") return "#333";
   return "#fff";
 }
 
-async function loadWeather(){
-  try{
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,precipitation_probability&timezone=Europe%2FPrague`;
+async function loadWeather() {
+
+  try {
+
+    const url =
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,precipitation_probability&daily=sunrise,sunset&timezone=Europe%2FPrague`;
+
     const res = await fetch(url);
     const data = await res.json();
 
     const now = new Date();
+
     const times = data.hourly.time;
     const temps = data.hourly.temperature_2m;
     const pops = data.hourly.precipitation_probability;
     const precs = data.hourly.precipitation;
 
+    const sunrise = new Date(data.daily.sunrise[0]);
+    const sunset = new Date(data.daily.sunset[0]);
+
+    const sunriseHour = sunrise.getHours();
+    const sunsetHour = sunset.getHours();
+
     const currentIndex = times.findIndex(t => new Date(t) >= now);
 
-    // zobraz datum
+    // datum
     const dateDiv = document.getElementById("date");
+
     const today = new Date(times[currentIndex]);
-    const options = { weekday: 'long', year:'numeric', month:'long', day:'numeric' };
-    dateDiv.textContent = today.toLocaleDateString('cs-CZ', options);
+
+    const options = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    };
+
+    dateDiv.textContent =
+      today.toLocaleDateString('cs-CZ', options);
 
     const container = document.getElementById("weather");
     container.innerHTML = "";
 
-    for(let i=currentIndex; i<currentIndex+6; i++){
+    for (let i = currentIndex; i < currentIndex + 6; i++) {
+
       const d = new Date(times[i]);
-      const hourStr = `${d.getHours()}:00`;
-      const temp = Math.round(temps[i]);
-      const pop = Math.round(pops[i]);
-      const prec = precs[i].toFixed(1);
-      const bgColor = getTempColor(temp);
-      const icon = getWeatherIcon(pop,temp);
-      const textColor = getTextColor(bgColor);
+
+      const hourStr =
+        `${d.getHours()}:00`;
+
+      const temp =
+        Math.round(temps[i]);
+
+      const pop =
+        Math.round(pops[i]);
+
+      const prec =
+        precs[i].toFixed(1);
+
+      const bgColor =
+        getTempColor(temp);
+
+      const textColor =
+        getTextColor(bgColor);
+
+      const icon = getWeatherIcon(
+        pop,
+        temp,
+        d.getHours(),
+        sunriseHour,
+        sunsetHour
+      );
 
       container.innerHTML += `
-        <div class="hour-row" style="background-color:${bgColor}; color:${textColor}">
+        <div class="hour-row"
+             style="background-color:${bgColor}; color:${textColor}">
+
           <div class="time">${hourStr}</div>
+
           <div class="icon">${icon}</div>
+
           <div class="temp">${temp}°C</div>
+
           <div class="precip">${prec} mm (${pop}%)</div>
+
         </div>
       `;
     }
-  } catch(e){
+
+  } catch (e) {
+
     console.error("Chyba při načítání počasí:", e);
-    document.getElementById("weather").innerHTML="Nepodařilo se načíst data.";
+
+    document.getElementById("weather").innerHTML =
+      "Nepodařilo se načíst data.";
   }
 }
 
 loadWeather();
 </script>
+
 </body>
 </html>
