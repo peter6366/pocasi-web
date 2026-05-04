@@ -79,13 +79,18 @@
 const lat = 50.1045;
 const lon = 14.3112;
 
-function getWeatherIcon(pop, temp, hour, sunriseMin, sunsetMin) {
-  const nowMin = hour * 60;
-  const isNight = nowMin < sunriseMin || nowMin >= sunsetMin;
+function getWeatherIcon(pop, cloud, temp, isNight) {
 
+  // déšť má prioritu
   if (pop >= 50) return isNight ? "🌧️🌙" : "🌧️";
-  if (pop >= 20) return isNight ? "☁️🌙" : "⛅";
-  if (temp <= 0) return "❄️";
+
+  // oblačnost
+  if (cloud >= 70) return isNight ? "☁️🌙" : "☁️";
+
+  // částečně zataženo
+  if (cloud >= 30) return isNight ? "⛅🌙" : "⛅";
+
+  // jasno
   return isNight ? "🌙" : "☀️";
 }
 
@@ -103,9 +108,13 @@ function getTextColor(bgColor) {
 }
 
 async function loadWeather() {
+
   try {
+
     const url =
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,precipitation_probability&daily=sunrise,sunset&timezone=Europe%2FPrague`;
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&hourly=temperature_2m,precipitation,precipitation_probability,cloudcover` +
+      `&daily=sunrise,sunset&timezone=Europe%2FPrague`;
 
     const res = await fetch(url);
     const data = await res.json();
@@ -116,6 +125,7 @@ async function loadWeather() {
     const temps = data.hourly.temperature_2m;
     const pops = data.hourly.precipitation_probability;
     const precs = data.hourly.precipitation;
+    const clouds = data.hourly.cloudcover;
 
     const sunrise = new Date(data.daily.sunrise[0]);
     const sunset = new Date(data.daily.sunset[0]);
@@ -126,14 +136,8 @@ async function loadWeather() {
     let currentIndex = times.findIndex(t => new Date(t) >= now);
     currentIndex = Math.max(0, currentIndex);
 
-    // ✔️ OPRAVA: kontrola existence DOM
     const dateDiv = document.getElementById("date");
     const container = document.getElementById("weather");
-
-    if (!dateDiv || !container) {
-      console.error("Chybí DOM element #date nebo #weather");
-      return;
-    }
 
     const today = new Date(times[currentIndex]);
 
@@ -155,21 +159,25 @@ async function loadWeather() {
 
       const d = new Date(times[i]);
 
-      const hourStr = `${d.getHours()}:00`;
+      const hour = d.getHours();
+      const hourStr = `${hour}:00`;
 
       const temp = Math.round(temps[i]);
       const pop = Math.round(pops[i]);
       const prec = precs[i].toFixed(1);
+      const cloud = clouds[i];
 
       const bgColor = getTempColor(temp);
       const textColor = getTextColor(bgColor);
 
+      const nowMin = hour * 60;
+      const isNight = nowMin < sunriseMin || nowMin >= sunsetMin;
+
       const icon = getWeatherIcon(
         pop,
+        cloud,
         temp,
-        d.getHours(),
-        sunriseMin,
-        sunsetMin
+        isNight
       );
 
       container.innerHTML += `
@@ -190,8 +198,7 @@ async function loadWeather() {
   }
 }
 
-/* ✔️ KLÍČOVÁ OPRAVA: spouštění až po načtení DOM */
-document.addEventListener("DOMContentLoaded", loadWeather);
+loadWeather();
 </script>
 
 </body>
