@@ -3,53 +3,62 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Widget grid</title>
+<title>Widget dashboard</title>
 
 <style>
 body {
   margin: 0;
   font-family: sans-serif;
   background: #f5f5f5;
+
+  /* centrování dashboardu */
+  display: flex;
+  justify-content: center;
 }
 
-/* základní layout */
+/* hlavní grid */
 .container {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 12px;
+
   padding: 12px;
+
+  /* důležité: omezení šířky + center look */
+  width: 100%;
+  max-width: 1400px;
+  box-sizing: border-box;
 }
 
-/* PORTRAIT = mobil / výška */
+/* mobil / portrait režim */
 @media (orientation: portrait) {
   .container {
     grid-template-columns: 1fr;
+    max-width: 600px;
   }
 }
 
 /* widget */
 .box {
   aspect-ratio: 1 / 1;
-  background: #e0e0e0;
+
+  background: #dcdcdc;
   border-radius: 14px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  font-size: clamp(12px, 1.2vw, 18px);
+  font-size: clamp(12px, 1vw, 18px);
 
-  /* aby to na velkých monitorech nebylo extrémně široké */
-  max-width: 240px;
   width: 100%;
-  margin: 0 auto;
-
   transition: transform 0.15s ease, background 0.15s ease;
 }
 
+/* jemný hover efekt */
 .box:hover {
   transform: translateY(-2px);
-  background: #d6d6d6;
+  background: #cfcfcf;
 }
 </style>
 </head>
