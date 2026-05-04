@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Grid s lokalitami</title>
+<title>Počasí Uhříněves</title>
 
 <style>
   * {
@@ -14,104 +14,95 @@
     margin: 0;
     font-family: system-ui, sans-serif;
     background: #f5f5f5;
-  }
-
-  .wrapper {
-    padding: 20px;
-  }
-
-  .grid {
-    display: grid;
-    gap: 16px;
-
-    max-width: 1400px;
-    margin: 0 auto;
-
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  }
-
-  .box {
-    background: #ddd;
-    border-radius: 12px;
-
-    aspect-ratio: 1 / 1;
-
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
 
-    font-size: 16px;
-    color: #111;
+  .card {
+    width: 320px;
+    background: #ddd;
+    border-radius: 16px;
+    padding: 20px;
     text-align: center;
 
-    padding: 10px;
-    user-select: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  .title {
+  .city {
+    font-size: 20px;
     font-weight: 600;
   }
 
-  .subtitle {
-    font-size: 12px;
-    opacity: 0.7;
+  .icon {
+    font-size: 64px;
+    line-height: 1;
   }
 
-  @media (min-width: 1800px) {
-    .grid {
-      grid-template-columns: repeat(6, minmax(160px, 1fr));
-    }
+  .temp {
+    font-size: 42px;
+    font-weight: 700;
+  }
+
+  .desc {
+    font-size: 14px;
+    opacity: 0.75;
   }
 </style>
 </head>
 
 <body>
-  <div class="wrapper">
-    <div class="grid">
 
-      <div class="box">
-        <div>
-          <div class="title">Uhříněves</div>
-          <div class="subtitle">Praha 22</div>
-        </div>
-      </div>
+<div class="card">
+  <div class="city">Uhříněves</div>
 
-      <div class="box">
-        <div>
-          <div class="title">Kolovraty</div>
-          <div class="subtitle">Praha</div>
-        </div>
-      </div>
+  <div class="icon" id="icon">--</div>
 
-      <div class="box">
-        <div>
-          <div class="title">Benice</div>
-          <div class="subtitle">Praha</div>
-        </div>
-      </div>
+  <div class="temp" id="temp">-- °C</div>
 
-      <div class="box">
-        <div>
-          <div class="title">Říčany</div>
-          <div class="subtitle">Středočeský kraj</div>
-        </div>
-      </div>
+  <div class="desc" id="desc">Načítám...</div>
+</div>
 
-      <div class="box">
-        <div>
-          <div class="title">Královice</div>
-          <div class="subtitle">Praha</div>
-        </div>
-      </div>
+<script>
+  // --- DEMO DATA (nahraď API) ---
+  const weather = {
+    condition: "cloudy", // sunny | cloudy | rain | snow
+    temp: 6
+  };
 
-      <div class="box">
-        <div>
-          <div class="title">Lipany</div>
-          <div class="subtitle">Praha</div>
-        </div>
-      </div>
+  // --- časová logika ---
+  function isNight() {
+    const hour = new Date().getHours();
+    return (hour < 6 || hour >= 20);
+  }
 
-    </div>
-  </div>
+  // --- mapování ikon ---
+  function getIcon(condition, night) {
+    const map = {
+      sunny: night ? "🌙" : "☀️",
+      cloudy: night ? "☁️🌙" : "☁️",
+      rain: night ? "🌧️🌙" : "🌧️",
+      snow: "❄️"
+    };
+
+    return map[condition] || "❓";
+  }
+
+  // --- render ---
+  const night = isNight();
+
+  document.getElementById("icon").textContent =
+    getIcon(weather.condition, night);
+
+  document.getElementById("temp").textContent =
+    weather.temp + " °C";
+
+  document.getElementById("desc").textContent =
+    night ? "Nocní režim" : "Denní režim";
+</script>
+
 </body>
 </html>
