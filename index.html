@@ -1,28 +1,91 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Počasí Uhříněves</title>
+
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f0f0f0;
+    text-align: center;
+  }
+
+  .location {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 10px 0;
+  }
+
+  .date {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+  }
+
+  .weather-panel {
+    display: flex;
+    justify-content: center;
+    overflow-x: auto;
+    padding: 10px;
+  }
+
+  .hour-row {
+    flex: 0 0 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 6px;
+    font-size: 16px;
+    line-height: 1.4em;
+    padding: 12px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    min-width: 100px;
+  }
+
+  .hour-row .time {
+    font-weight: bold;
+    margin-bottom: 4px;
+    font-size: 18px;
+  }
+
+  .hour-row .icon {
+    font-size: 36px;
+    margin: 4px 0;
+  }
+
+  .hour-row .temp {
+    margin-top: 4px;
+    font-size: 18px;
+  }
+
+  .hour-row .precip {
+    margin-top: 2px;
+    font-size: 14px;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="location">Uhříněves</div>
+<div class="date" id="date"></div>
+<div class="weather-panel" id="weather">Načítám počasí...</div>
+
 <script>
 const lat = 50.1045;
 const lon = 14.3112;
 
 function getWeatherIcon(pop, temp, hour, sunriseMin, sunsetMin) {
-
   const nowMin = hour * 60;
   const isNight = nowMin < sunriseMin || nowMin >= sunsetMin;
 
-  // déšť má nejvyšší prioritu
-  if (pop >= 50) {
-    return isNight ? "🌧️🌙" : "🌧️";
-  }
-
-  // částečná oblačnost
-  if (pop >= 20) {
-    return isNight ? "☁️🌙" : "⛅";
-  }
-
-  // mráz / sníh
-  if (temp <= 0) {
-    return "❄️";
-  }
-
-  // jasno
+  if (pop >= 50) return isNight ? "🌧️🌙" : "🌧️";
+  if (pop >= 20) return isNight ? "☁️🌙" : "⛅";
+  if (temp <= 0) return "❄️";
   return isNight ? "🌙" : "☀️";
 }
 
@@ -40,9 +103,7 @@ function getTextColor(bgColor) {
 }
 
 async function loadWeather() {
-
   try {
-
     const url =
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,precipitation_probability&daily=sunrise,sunset&timezone=Europe%2FPrague`;
 
@@ -59,15 +120,20 @@ async function loadWeather() {
     const sunrise = new Date(data.daily.sunrise[0]);
     const sunset = new Date(data.daily.sunset[0]);
 
-    // přesnější čas (minuty)
     const sunriseMin = sunrise.getHours() * 60 + sunrise.getMinutes();
     const sunsetMin = sunset.getHours() * 60 + sunset.getMinutes();
 
     let currentIndex = times.findIndex(t => new Date(t) >= now);
     currentIndex = Math.max(0, currentIndex);
 
-    // datum
+    // ✔️ OPRAVA: kontrola existence DOM
     const dateDiv = document.getElementById("date");
+    const container = document.getElementById("weather");
+
+    if (!dateDiv || !container) {
+      console.error("Chybí DOM element #date nebo #weather");
+      return;
+    }
 
     const today = new Date(times[currentIndex]);
 
@@ -81,7 +147,6 @@ async function loadWeather() {
     dateDiv.textContent =
       today.toLocaleDateString('cs-CZ', options);
 
-    const container = document.getElementById("weather");
     container.innerHTML = "";
 
     for (let i = currentIndex; i < currentIndex + 6; i++) {
@@ -110,27 +175,24 @@ async function loadWeather() {
       container.innerHTML += `
         <div class="hour-row"
              style="background-color:${bgColor}; color:${textColor}">
-
           <div class="time">${hourStr}</div>
-
           <div class="icon">${icon}</div>
-
           <div class="temp">${temp}°C</div>
-
           <div class="precip">${prec} mm (${pop}%)</div>
-
         </div>
       `;
     }
 
   } catch (e) {
-
     console.error("Chyba při načítání počasí:", e);
-
     document.getElementById("weather").innerHTML =
       "Nepodařilo se načíst data.";
   }
 }
 
-loadWeather();
+/* ✔️ KLÍČOVÁ OPRAVA: spouštění až po načtení DOM */
+document.addEventListener("DOMContentLoaded", loadWeather);
 </script>
+
+</body>
+</html>
