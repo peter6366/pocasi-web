@@ -21,20 +21,26 @@
   }
 
   .card {
-    width: 320px;
+    width: 340px;
     background: #ddd;
     border-radius: 16px;
     padding: 20px;
-    text-align: center;
 
     display: flex;
     flex-direction: column;
     gap: 12px;
+
+    text-align: center;
   }
 
   .city {
     font-size: 20px;
     font-weight: 600;
+  }
+
+  .time {
+    font-size: 14px;
+    opacity: 0.75;
   }
 
   .icon {
@@ -46,11 +52,6 @@
     font-size: 42px;
     font-weight: 700;
   }
-
-  .desc {
-    font-size: 14px;
-    opacity: 0.75;
-  }
 </style>
 </head>
 
@@ -59,49 +60,57 @@
 <div class="card">
   <div class="city">Uhříněves</div>
 
+  <div class="time" id="time">--:--:--</div>
+
   <div class="icon" id="icon">--</div>
 
   <div class="temp" id="temp">-- °C</div>
-
-  <div class="desc" id="desc">Načítám...</div>
 </div>
 
 <script>
-  // --- DEMO DATA (nahraď API) ---
+  // demo data (bez API)
   const weather = {
     condition: "cloudy", // sunny | cloudy | rain | snow
     temp: 6
   };
 
-  // --- časová logika ---
   function isNight() {
-    const hour = new Date().getHours();
-    return (hour < 6 || hour >= 20);
+    const h = new Date().getHours();
+    return (h < 6 || h >= 20);
   }
 
-  // --- mapování ikon ---
   function getIcon(condition, night) {
-    const map = {
-      sunny: night ? "🌙" : "☀️",
-      cloudy: night ? "☁️🌙" : "☁️",
-      rain: night ? "🌧️🌙" : "🌧️",
-      snow: "❄️"
-    };
-
-    return map[condition] || "❓";
+    if (condition === "sunny") return night ? "🌙" : "☀️";
+    if (condition === "cloudy") return night ? "☁️🌙" : "☁️";
+    if (condition === "rain") return night ? "🌧️🌙" : "🌧️";
+    if (condition === "snow") return "❄️";
+    return "❓";
   }
 
-  // --- render ---
-  const night = isNight();
+  function updateClock() {
+    const now = new Date();
+    document.getElementById("time").textContent =
+      now.toLocaleTimeString("cs-CZ", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+  }
 
-  document.getElementById("icon").textContent =
-    getIcon(weather.condition, night);
+  function render() {
+    const night = isNight();
 
-  document.getElementById("temp").textContent =
-    weather.temp + " °C";
+    document.getElementById("icon").textContent =
+      getIcon(weather.condition, night);
 
-  document.getElementById("desc").textContent =
-    night ? "Nocní režim" : "Denní režim";
+    document.getElementById("temp").textContent =
+      weather.temp + " °C";
+  }
+
+  updateClock();
+  render();
+
+  setInterval(updateClock, 1000);
 </script>
 
 </body>
